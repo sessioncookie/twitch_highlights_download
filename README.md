@@ -52,6 +52,15 @@ Twitch 精華下載工具是一個基於 Python 和 PyQt6 的桌面應用程式�
 - 若下載失敗，失敗的影片名稱會顯示在總結中。
 - 下載檔案預設儲存為 .mp4 格式。
 
+取得TOKEN教學
+
+![教學0](https://github.com/user-attachments/assets/01e7371c-92de-4d37-98d5-d81c491242ec)
+![教學1](https://github.com/user-attachments/assets/76aca4cb-36d8-4511-b15a-31ea201d69f8)
+![教學2](https://github.com/user-attachments/assets/e8527268-5da5-4d3e-a01b-c513302b43dd)
+![教學3](https://github.com/user-attachments/assets/fd24fe91-89df-4153-bc2e-ffc8fb733487)
+![教學6](https://github.com/user-attachments/assets/33e73f2e-81d7-4ee7-be5b-0bc14dbac396)
+![教學5](https://github.com/user-attachments/assets/9c356955-7858-432a-bf97-d94110acb476)
+
 ## 授權
 此專案目前未指定具體授權，僅供學習與個人使用。
 
