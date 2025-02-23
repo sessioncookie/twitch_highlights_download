@@ -11,8 +11,7 @@ Twitch 精華下載工具是一個基於 Python 和 PyQt6 的桌面應用程式�
 - **檔案管理**: 自動清理檔案名稱中的無效字元，並支援自訂下載路徑。
 
 ## 環境需求
-- Python 3.8 或更高版本
-- 操作系統：Windows（其他系統可能需要調整 ffmpeg 路徑）
+- Python 3.12.4 或更高版本
 - 所需套件（見下方安裝步驟）
 
 ## 安裝步驟
@@ -22,7 +21,7 @@ Twitch 精華下載工具是一個基於 Python 和 PyQt6 的桌面應用程式�
 2. **clone 或下載此專案**  
    使用 Git clone 或直接下載 ZIP 檔案並解壓縮：
    """
-   git clone https://github.com/<您的使用者名稱>/<您的儲存庫名稱>.git
+   git clone https://github.com/sessioncookie/twitch_highlights_download.git
    """
 
 3. **安裝依賴套件**  
@@ -30,11 +29,6 @@ Twitch 精華下載工具是一個基於 Python 和 PyQt6 的桌面應用程式�
    """
    pip install requests PyQt6 imageio-ffmpeg
    """
-
-4. **安裝 FFmpeg**  
-   此工具使用 FFmpeg 下載和處理影片，您需要：
-   - 下載 FFmpeg 並安裝（[官方網站](https://ffmpeg.org/download.html)）。
-   - 確保 FFmpeg 可在命令列中執行（將其加入系統 PATH）。
 
 ## 使用方法
 1. **獲取 ACCESS TOKEN 和 CLIENT ID**  
@@ -61,5 +55,3 @@ Twitch 精華下載工具是一個基於 Python 和 PyQt6 的桌面應用程式�
 ## 授權
 此專案目前未指定具體授權，僅供學習與個人使用。
 
-## 聯絡
-如有問題或建議，請聯絡 <您的聯絡方式>。
