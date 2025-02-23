@@ -11,7 +11,28 @@ import os
 import sys
 import re
 from PyQt6 import QtCore
+import m3u8
 
+def get_highest_quality_url(m3u8_url: str) -> Optional[str]:
+    """解析 m3u8 主播放清單，返回最高畫質的子播放清單 URL"""
+    try:
+        response = requests.get(m3u8_url, timeout=10)
+        response.raise_for_status()
+        playlist = m3u8.loads(response.text)
+        if playlist.playlists:
+            # 選擇第一個子播放清單（通常是最高畫質，因為按頻寬排序）
+            highest_quality_url = playlist.playlists[0].uri
+            # 檢查是否為相對路徑，若是則拼接為絕對路徑
+            if not highest_quality_url.startswith("http"):
+                base_url = m3u8_url[:m3u8_url.rfind('/') + 1]
+                highest_quality_url = base_url + highest_quality_url
+            return highest_quality_url
+        logger.warning(f"無可用畫質選項: {m3u8_url}")
+        return m3u8_url  # 若無子播放清單，返回主播放清單 URL
+    except requests.RequestException as e:
+        logger.error(f"解析 m3u8 失敗: {str(e)}")
+        return None
+    
 # 設定 logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -49,39 +70,45 @@ class DownloadWorker(QRunnable):
     def run(self):
         """執行下載任務"""
         if not self._is_running:
-            return  # 如果已經中止，直接退出
+            return
 
         sanitized_title = sanitize_filename(self.video_info['title'])
         output_file = os.path.join(self.down_path, f"{sanitized_title}.mp4")
         if os.path.exists(output_file):
             self.signals.progress.emit(f"{self.video_info['title']}: 檔案已存在，跳過")
-            self.signals.finished.emit(True, "skipped")  # 跳過視為完成
+            self.signals.finished.emit(True, "skipped")
             return
 
         if not self._is_running:
-            return  # 再次檢查中止狀態
+            return
 
         vod_id = self.video_info["videoID"]
         m3u8_url = get_twitch_vod_m3u8(vod_id)
         if m3u8_url and self._is_running:
-            self.signals.progress.emit(f"{self.video_info['title']}: 開始下載")
-            success = download_twitch_vod(m3u8_url, output_file[:-4])
+            # 獲取最高畫質的子播放清單 URL
+            highest_quality_url = get_highest_quality_url(m3u8_url)
+            if not highest_quality_url:
+                self.signals.progress.emit(f"{self.video_info['title']}: 無法獲取最高畫質串流連結")
+                self.signals.finished.emit(False, "failed")
+                return
+
+            self.signals.progress.emit(f"{self.video_info['title']}: 開始下載 (最高畫質)")
+            success = download_twitch_vod(highest_quality_url, output_file[:-4])
             if self._is_running:
                 if success:
                     self.signals.progress.emit(f"{self.video_info['title']}: 下載完成")
-                    self.signals.finished.emit(True, "completed")  # 下載成功
+                    self.signals.finished.emit(True, "completed")
                 else:
                     self.signals.progress.emit(f"{self.video_info['title']}: 下載失敗")
-                    self.signals.finished.emit(False, "failed")  # 下載失敗
+                    self.signals.finished.emit(False, "failed")
             else:
-                self.signals.finished.emit(False, "aborted")  # 中止
+                self.signals.finished.emit(False, "aborted")
         else:
             if self._is_running:
                 self.signals.progress.emit(f"{self.video_info['title']}: 無法獲取串流連結")
-                self.signals.finished.emit(False, "failed")  # 無法獲取連結視為失敗
+                self.signals.finished.emit(False, "failed")
             else:
-                self.signals.finished.emit(False, "aborted")  # 中止
-
+                self.signals.finished.emit(False, "aborted")
 # 信號類別
 class WorkerSignals(QObject):
     progress = pyqtSignal(str)
@@ -187,7 +214,7 @@ def download_twitch_vod(m3u8_url: str, output_filename: str, file_format: str = 
             ffmpeg_path, "-i", m3u8_url, "-c", "copy", "-bsf:a", "aac_adtstoasc",
             f"{output_filename}.{file_format}"
         ]
-        result = subprocess.run(cmd, capture_output=True, text=False, check=True)
+        result = subprocess.run(cmd, capture_output=True, text=False, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
         logger.info(f"下載完成: {output_filename}.{file_format}")
         return True
     except subprocess.CalledProcessError as e:
