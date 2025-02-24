@@ -5,13 +5,24 @@ import logging
 import imageio_ffmpeg as ffmpeg
 import subprocess
 from PyQt6.QtWidgets import *
-from PyQt6.QtCore import QThread, pyqtSignal, QRunnable, QThreadPool, QObject
+from PyQt6.QtCore import pyqtSignal, QRunnable, QThreadPool, QObject
 from PyQt6.QtGui import QFont
 import os
 import sys
 import re
 from PyQt6 import QtCore
 import m3u8
+
+# 設定 logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 常數
+GQL_CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko"
+GQL_HEADERS = {
+    "Client-ID": GQL_CLIENT_ID,
+    "Content-Type": "application/json"
+}
 
 def get_highest_quality_url(m3u8_url: str) -> Optional[str]:
     """解析 m3u8 主播放清單，返回最高畫質的子播放清單 URL"""
@@ -33,17 +44,6 @@ def get_highest_quality_url(m3u8_url: str) -> Optional[str]:
         logger.error(f"解析 m3u8 失敗: {str(e)}")
         return None
     
-# 設定 logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# 常數
-GQL_CLIENT_ID = "kimne78kx3ncx6brgo4mv6wki5h1ko"
-GQL_HEADERS = {
-    "Client-ID": GQL_CLIENT_ID,
-    "Content-Type": "application/json"
-}
-
 # 清理檔案名稱的函數
 def sanitize_filename(filename: str) -> str:
     """移除或替換檔案名稱中的無效字元並限制長度"""
@@ -114,14 +114,14 @@ class WorkerSignals(QObject):
     progress = pyqtSignal(str)
     finished = pyqtSignal(bool, str)  # bool 表示是否成功，str 表示狀態
 
-def get_highlights_rest(base_headers: dict, user_id: str, max_videos: int = 50) -> List[Dict]:
+def get_highlights_rest(base_headers: dict, user_id: str) -> List[Dict]:
     """獲取 Twitch 使用者的精華片段"""
     base_url = "https://api.twitch.tv/helix/videos"
-    params = {"user_id": user_id, "type": "highlight", "first": min(100, max_videos)}
+    params = {"user_id": user_id, "type": "highlight", "first": 100}
     highlights = []
 
     try:
-        while len(highlights) < max_videos:
+        while True:
             response = requests.get(base_url, headers=base_headers, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
@@ -137,8 +137,6 @@ def get_highlights_rest(base_headers: dict, user_id: str, max_videos: int = 50) 
                     "release_time": video["created_at"],
                     "url": f"https://www.twitch.tv/videos/{video['id']}"
                 })
-                if len(highlights) >= max_videos:
-                    break
 
             cursor = data.get("pagination", {}).get("cursor")
             if not cursor:
